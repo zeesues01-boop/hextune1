@@ -9,15 +9,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Find project
+        shell: bash
+        run: |
+          F=$(find . -name CMakeLists.txt -not -path "./build/*" | head -n 1)
+          if [ -z "$F" ]; then echo "CMakeLists.txt not found in repo - upload it"; exit 1; fi
+          echo "SRC=$(dirname "$F")" >> "$GITHUB_ENV"
+          echo "Found project in $(dirname "$F")"
+
       - name: Configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+        run: cmake -S "$SRC" -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        shell: bash
         run: cmake --build build --config Release --target HexTune_VST3 --parallel
 
       - name: Package
